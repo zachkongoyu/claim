@@ -1,111 +1,136 @@
-# Medical Claims Validation API
+# 🚀 Agentic AI Project Ideas Leveraging HL7/FHIR
 
-An agent-driven medical claims API that validates inbound FHIR (R4/R5) data, performs autonomous coding and payer-rule audits, translates claims to X12 837/278, and orchestrates submission with compliance-focused follow-up and audit trails.
+Agentic AI systems can natively operate on HL7 FHIR resources using standardized JSON REST APIs, terminology servers, and interoperability profiles. Below are six autonomous agents, each with a dedicated MCP server and an implementation outline.
 
-## What This Does
+---
 
-This service ingests FHIR JSON, enriches and validates clinical context, assigns billing codes, checks payer-specific rules, and submits claims or prior authorizations. It continuously monitors payer responses and produces a final, human-readable audit trail for compliance.
+## 1. Autonomous Claims Adjudication Agent
+**Inputs:** Claim resources from providers.
 
-## 2026 FHIR Claim Workflow
+**Agent Actions:**
+- Validate diagnosis and procedure codes using HL7 Terminology Server $validate-code.
+- Translate codes between SNOMED CT and ICD‑10 using ConceptMap/$translate.
+- Apply payer rules to simulate adjudication.
+- Generate a ClaimResponse resource automatically.
 
-1) **Verification & Enrichment (Extraction Agent)**
-	- Validates FHIR R4/R5 structure and completeness.
-	- Links Condition/Observation resources to billable Procedures to establish medical necessity.
+**Impact:** Reduces manual review and speeds up reimbursement cycles.
 
-2) **Autonomous Decision Making (Coding & Audit Agents)**
-	- **Coder:** Maps clinical text to 2026 ICD‑10/CPT codes.
-	- **Auditor:** Applies payer-specific rules (modifiers, coverage rules, etc.).
+**Implementation (MCP Server: adjudication-mcp):**
+- **Endpoints:** validate_claim, translate_codes, apply_rules, generate_response.
+- **Data flow:** Claim → terminology validation → code translation → payer rule engine → ClaimResponse.
+- **Core services:** terminology client, concept map resolver, rule evaluator, response builder.
+- **Outputs:** ClaimResponse, adjudication summary, rule decision trace.
 
-3) **Protocol Translation (FHIR → X12)**
-	- Converts clean FHIR claims into X12 837 (billing) or 278 (prior auth).
+---
 
-4) **Automated Submission & Follow‑up (Orchestrator)**
-	- Submits via FHIR PAS API or EDI gateway.
-	- Polls payer status to meet CMS‑0057‑F 72‑hour decisions for urgent cases.
+## 2. Prior Authorization Navigator
+**Inputs:** Claim or Coverage resources.
 
-5) **Denial Management (Recovery Agent)**
-	- Parses denial reason, gathers missing documentation, and drafts appeals or resubmissions.
+**Agent Actions:**
+- Predict whether a service requires prior authorization.
+- Query payer rules and historical claims.
+- Auto‑generate preauthorization requests.
 
-6) **Final Output (Audit Trail)**
-	- Returns structured status, amount, and reasoning log to the hospital EHR.
+**Impact:** Prevents delays in care and improves provider workflows.
 
-## Tech Stack
+**Implementation (MCP Server: prior-auth-mcp):**
+- **Endpoints:** predict_required, fetch_rules, build_preauth_request, track_status.
+- **Data flow:** Claim/Coverage → rules + history → decision → authorization request.
+- **Core services:** payer rules client, utilization reviewer, prior-auth builder.
+- **Outputs:** AuthorizationRequest resource, rationale, required documentation checklist.
 
-- **Python 3.12+**
-- **FastAPI** (API framework)
-- **Uvicorn** (ASGI server)
-- **Pydantic** (validation)
-- **MCP** (Model Context Protocol)
-- **HTTPX** / **AnyIO** (async I/O)
+---
 
-## Project Structure
+## 3. Clinical Coding Translator Agent
+**Inputs:** Condition or Observation resources with SNOMED CT codes.
 
-```
-claim/
-├── pyproject.toml          # Dependencies and configuration
-├── README.md
-└── src/
-	 ├── __init__.py
-	 ├── main.py             # FastAPI entry point
-	 ├── config.py           # Configuration management
-	 ├── agents/             # Extraction, coding, audit, recovery
-	 ├── api/                # API routes
-	 ├── claim/              # Core claim logic
-	 │   └── mcp/            # MCP protocol implementation
-	 │       ├── client/     # MCP client
-	 │       └── server/     # MCP server
-	 └── services/           # Orchestration, translation, audit trail
-```
+**Agent Actions:**
+- Map clinical codes to billing codes (ICD‑10, CPT, HCPCS).
+- Suggest best‑fit codes when multiple mappings exist.
+- Flag ambiguous or invalid codes.
 
-## Getting Started
+**Impact:** Ensures compliance with billing requirements and reduces coding errors.
 
-### Prerequisites
+**Implementation (MCP Server: coding-translator-mcp):**
+- **Endpoints:** map_codes, rank_candidates, validate_code, flag_ambiguity.
+- **Data flow:** Condition/Observation → code mapping → ranking → validation.
+- **Core services:** concept map resolver, ranking model, code validator.
+- **Outputs:** Suggested billing codes, confidence scores, ambiguity flags.
 
-- Python 3.12+
-- pip (or uv)
+---
 
-### Install
+## 4. Fraud & Anomaly Detection Agent
+**Inputs:** Bundles of Claim resources.
 
-```bash
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -e .
-```
+**Agent Actions:**
+- Detect unusual combinations of diagnosis and procedure codes.
+- Identify suspicious billing patterns (overutilization, duplicate claims).
+- Generate alerts for payer review.
 
-### Run the API
+**Impact:** Helps insurers reduce fraud, waste, and abuse.
 
-```bash
-cd src
-python main.py
-```
+**Implementation (MCP Server: fraud-detection-mcp):**
+- **Endpoints:** analyze_bundle, detect_anomalies, generate_alerts.
+- **Data flow:** Claim Bundle → pattern analysis → anomaly scoring → alert generation.
+- **Core services:** rules + ML anomaly scorer, historical claim matcher.
+- **Outputs:** Fraud alerts, risk scores, supporting evidence links.
 
-API runs at http://localhost:8000
+---
 
-### API Docs
+## 5. Synthetic Data Generation Agent
+**Inputs:** HL7 FHIR schemas (Patient, Claim, Coverage).
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+**Agent Actions:**
+- Generate realistic synthetic claims and patient records.
+- Validate against HL7 servers to ensure compliance.
+- Provide datasets for training ML models safely (no PHI).
 
-## Current Endpoints
+**Impact:** Enables AI experimentation without privacy risks.
 
-- `GET /` — API info
-- `GET /health` — Health status
+**Implementation (MCP Server: synthetic-data-mcp):**
+- **Endpoints:** generate_patient, generate_claim, generate_coverage, validate_resource, export_dataset.
+- **Data flow:** schema inputs → synthetic generator → validation → dataset assembly.
+- **Core services:** synthetic data generator, FHIR validator, dataset packager.
+- **Outputs:** Synthetic FHIR resources and datasets.
 
-## Architecture Notes
+---
 
-- **MCP Server/Client** provide agent interop.
-- **Agents** handle extraction, coding, auditing, and recovery.
-- **Services** handle translation, orchestration, and audit trail output.
+## 6. Patient‑Centric Care Coordination Agent
+**Inputs:** Patient, Condition, Coverage, Claim.
 
-## Roadmap (Suggested Build Order)
+**Agent Actions:**
+- Aggregate all resources via $everything.
+- Identify gaps in care (missing follow‑ups).
+- Suggest interventions or coverage options.
 
-1. FHIR models + validation
-2. Extraction Agent
-3. Coding & Audit Agents
-4. FHIR → X12 translator
-5. Orchestrator + status polling
-6. Recovery + audit trail
+**Impact:** Improves patient outcomes and payer/provider collaboration.
 
-## License
+**Implementation (MCP Server: care-coordination-mcp):**
+- **Endpoints:** aggregate_patient, detect_gaps, suggest_interventions, coverage_recommendations.
+- **Data flow:** Patient → $everything bundle → care gap detection → recommendations.
+- **Core services:** care gap analyzer, coverage matcher, recommendation engine.
+- **Outputs:** Care plan suggestions, coverage options, follow‑up tasks.
 
-Add your license here.
+---
+
+## ✅ Why HL7/FHIR is Ideal for Agentic AI
+- **Standardized APIs** → JSON REST endpoints for all healthcare entities.
+- **Terminology Integration** → Built‑in code validation and mapping.
+- **Extensibility** → Agents can generate new FHIR resources (ClaimResponse, AuthorizationRequest).
+- **Synthetic Data Availability** → Safe for prototyping AI workflows.
+
+---
+
+## MCP Server Strategy (Per Agent)
+Each agent is deployed as its own MCP server with a focused capability set. This enables:
+- Independent scaling and deployment
+- Clear API boundaries
+- Composable orchestration across agents
+
+Recommended server naming convention:
+- adjudication-mcp
+- prior-auth-mcp
+- coding-translator-mcp
+- fraud-detection-mcp
+- synthetic-data-mcp
+- care-coordination-mcp
